@@ -71,6 +71,15 @@ namespace ignition
 
       public: virtual Ogre::SceneManager *OgreSceneManager() const;
 
+      public: virtual DirectionalLightPtr CreateDirectionalLight(
+                  unsigned int _id, const std::string &_name) override;
+
+      public: virtual PointLightPtr CreatePointLight(unsigned int _id,
+                  const std::string &_name) override;
+
+      public: virtual SpotLightPtr CreateSpotLight(unsigned int _id,
+                  const std::string &_name) override;
+
       protected: virtual bool LoadImpl() override;
 
       protected: virtual bool InitImpl() override;

@@ -360,6 +360,45 @@ MaterialMapPtr OgreScene::Materials() const
 }
 
 //////////////////////////////////////////////////
+DirectionalLightPtr OgreScene::CreateDirectionalLight(unsigned int _id,
+    const std::string &_name)
+{
+  DirectionalLightPtr light = this->CreateDirectionalLightImpl(_id, _name);
+  bool result = this->RegisterLight(light);
+
+  OgreRTShaderSystem::Instance()->RemoveShadows(this->SharedThis());
+  OgreRTShaderSystem::Instance()->ApplyShadows(this->SharedThis());
+
+  return (result) ? light : nullptr;
+}
+
+//////////////////////////////////////////////////
+PointLightPtr OgreScene::CreatePointLight(unsigned int _id,
+    const std::string &_name)
+{
+  PointLightPtr light = this->CreatePointLightImpl(_id, _name);
+  bool result = this->RegisterLight(light);
+
+  OgreRTShaderSystem::Instance()->RemoveShadows(this->SharedThis());
+  OgreRTShaderSystem::Instance()->ApplyShadows(this->SharedThis());
+
+  return (result) ? light : nullptr;
+}
+
+//////////////////////////////////////////////////
+SpotLightPtr OgreScene::CreateSpotLight(unsigned int _id,
+    const std::string &_name)
+{
+  SpotLightPtr light = this->CreateSpotLightImpl(_id, _name);
+  bool result = this->RegisterLight(light);
+
+  OgreRTShaderSystem::Instance()->RemoveShadows(this->SharedThis());
+  OgreRTShaderSystem::Instance()->ApplyShadows(this->SharedThis());
+
+  return (result) ? light : nullptr;
+}
+
+//////////////////////////////////////////////////
 DirectionalLightPtr OgreScene::CreateDirectionalLightImpl(unsigned int _id,
     const std::string &_name)
 {
