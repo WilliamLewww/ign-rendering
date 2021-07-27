@@ -567,11 +567,6 @@ void OgreRTShaderSystem::ApplyShadows(OgreScenePtr _scene)
 
   Ogre::SceneManager *sceneMgr = _scene->OgreSceneManager();
 
-  // Grab the scheme render state.
-  Ogre::RTShader::RenderState* schemRenderState =
-    this->dataPtr->shaderGenerator->getRenderState(_scene->Name() +
-        Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
-
   sceneMgr->setShadowTechnique(Ogre::SHADOWTYPE_TEXTURE_ADDITIVE_INTEGRATED);
 
   // directional: assume there can only be one dir light and we always create
@@ -597,6 +592,7 @@ void OgreRTShaderSystem::ApplyShadows(OgreScenePtr _scene)
   // 3 textures per directional light
   sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_DIRECTIONAL, 3);
 
+  // 6 textures per point light to create a shadow cube
   sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_POINT, 6);
 
   sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_SPOTLIGHT, 0);
@@ -604,7 +600,7 @@ void OgreRTShaderSystem::ApplyShadows(OgreScenePtr _scene)
   unsigned int dirShadowCount = 3 * dirLightCount;
   unsigned int pointShadowCount = 6 * pointLightCount;
   unsigned int spotShadowCount = spotLightCount;
-  sceneMgr->setShadowTextureCount(dirShadowCount);
+  sceneMgr->setShadowTextureCount(dirShadowCount + pointShadowCount);
 
   sceneMgr->setShadowTextureConfig(0,
       this->dataPtr->shadowTextureSize, this->dataPtr->shadowTextureSize,
@@ -615,6 +611,30 @@ void OgreRTShaderSystem::ApplyShadows(OgreScenePtr _scene)
   sceneMgr->setShadowTextureConfig(2,
       this->dataPtr->shadowTextureSize/2, this->dataPtr->shadowTextureSize/2,
       Ogre::PF_FLOAT32_R);
+
+#if defined(HAVE_OPENGL)
+  // Enable shadow map comparison, so shader can use
+  // float texture(sampler2DShadow, vec3, [float]) instead of
+  // vec4 texture(sampler2D, vec2, [float]).
+  // NVidia, AMD, and Intel all take this as a cue to provide "hardware PCF",
+  // a driver hack that softens shadow edges with 4-sample interpolation.
+  for (size_t i = 0u; i < dirShadowCount + pointShadowCount; 
+      ++i)
+  {
+    const Ogre::TexturePtr tex = sceneMgr->getShadowTexture(i);
+    // This will fail if not using OpenGL as the rendering backend.
+    GLuint texId;
+    tex->getCustomAttribute("GLID", &texId);
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
+        GL_COMPARE_R_TO_TEXTURE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+        GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+        GL_LINEAR);
+  }
+#endif
+
   sceneMgr->setShadowTextureSelfShadow(false);
   sceneMgr->setShadowCasterRenderBackFaces(true);
 
@@ -627,70 +647,73 @@ void OgreRTShaderSystem::ApplyShadows(OgreScenePtr _scene)
   sceneMgr->setShadowTextureCasterMaterial(mat);
 #endif
 
-  // Disable fog on the caster pass.
-  //  Ogre::MaterialPtr passCaterMaterial =
-  //   Ogre::MaterialManager::getSingleton().getByName("PSSM/shadow_caster");
-  // Ogre::Pass* pssmCasterPass =
-  // passCaterMaterial->getTechnique(0)->getPass(0);
-  // pssmCasterPass->setFog(true);
+  sceneMgr->setShadowCameraSetup(
+      Ogre::ShadowCameraSetupPtr(new Ogre::DefaultShadowCameraSetup()));
 
-  // shadow camera setup
-#if OGRE_VERSION_LT_1_10_1
-  if (this->dataPtr->pssmSetup.isNull())
-#else
-  if (this->dataPtr->pssmSetup == nullptr)
-#endif
-  {
-    this->dataPtr->pssmSetup =
-        Ogre::ShadowCameraSetupPtr(new Ogre::PSSMShadowCameraSetup());
-  }
+//   // Disable fog on the caster pass.
+//   //  Ogre::MaterialPtr passCaterMaterial =
+//   //   Ogre::MaterialManager::getSingleton().getByName("PSSM/shadow_caster");
+//   // Ogre::Pass* pssmCasterPass =
+//   // passCaterMaterial->getTechnique(0)->getPass(0);
+//   // pssmCasterPass->setFog(true);
 
-  double shadowFarDistance = 500;
-  double cameraNearClip = 0.01;
-  sceneMgr->setShadowFarDistance(shadowFarDistance);
+//   // shadow camera setup
+// #if OGRE_VERSION_LT_1_10_1
+//   if (this->dataPtr->pssmSetup.isNull())
+// #else
+//   if (this->dataPtr->pssmSetup == nullptr)
+// #endif
+//   {
+//     this->dataPtr->pssmSetup =
+//         Ogre::ShadowCameraSetupPtr(new Ogre::PSSMShadowCameraSetup());
+//   }
 
-  Ogre::PSSMShadowCameraSetup *cameraSetup =
-      dynamic_cast<Ogre::PSSMShadowCameraSetup *>(
-      this->dataPtr->pssmSetup.get());
+//   double shadowFarDistance = 500;
+//   double cameraNearClip = 0.01;
+//   sceneMgr->setShadowFarDistance(shadowFarDistance);
 
-  cameraSetup->calculateSplitPoints(3, cameraNearClip, shadowFarDistance);
-  cameraSetup->setSplitPadding(4);
-  cameraSetup->setOptimalAdjustFactor(0, 2);
-  cameraSetup->setOptimalAdjustFactor(1, 1);
-  cameraSetup->setOptimalAdjustFactor(2, .5);
+//   Ogre::PSSMShadowCameraSetup *cameraSetup =
+//       dynamic_cast<Ogre::PSSMShadowCameraSetup *>(
+//       this->dataPtr->pssmSetup.get());
 
-  sceneMgr->setShadowCameraSetup(this->dataPtr->pssmSetup);
+//   cameraSetup->calculateSplitPoints(3, cameraNearClip, shadowFarDistance);
+//   cameraSetup->setSplitPadding(4);
+//   cameraSetup->setOptimalAdjustFactor(0, 2);
+//   cameraSetup->setOptimalAdjustFactor(1, 1);
+//   cameraSetup->setOptimalAdjustFactor(2, .5);
 
-  // These values do not seem to help at all. Leaving here until I have time
-  // to properly fix shadow z-fighting.
-  // cameraSetup->setOptimalAdjustFactor(0, 4);
-  // cameraSetup->setOptimalAdjustFactor(1, 1);
-  // cameraSetup->setOptimalAdjustFactor(2, 0.5);
+//   sceneMgr->setShadowCameraSetup(this->dataPtr->pssmSetup);
 
-  this->dataPtr->shadowRenderState =
-      this->dataPtr->shaderGenerator->createSubRenderState(
-      Ogre::RTShader::IntegratedPSSM3::Type);
-  Ogre::RTShader::IntegratedPSSM3 *pssm3SubRenderState =
-      static_cast<Ogre::RTShader::IntegratedPSSM3 *>(
-      this->dataPtr->shadowRenderState);
+//   // These values do not seem to help at all. Leaving here until I have time
+//   // to properly fix shadow z-fighting.
+//   // cameraSetup->setOptimalAdjustFactor(0, 4);
+//   // cameraSetup->setOptimalAdjustFactor(1, 1);
+//   // cameraSetup->setOptimalAdjustFactor(2, 0.5);
 
-  const Ogre::PSSMShadowCameraSetup::SplitPointList &srcSplitPoints =
-    cameraSetup->getSplitPoints();
+//   this->dataPtr->shadowRenderState =
+//       this->dataPtr->shaderGenerator->createSubRenderState(
+//       Ogre::RTShader::IntegratedPSSM3::Type);
+//   Ogre::RTShader::IntegratedPSSM3 *pssm3SubRenderState =
+//       static_cast<Ogre::RTShader::IntegratedPSSM3 *>(
+//       this->dataPtr->shadowRenderState);
 
-  Ogre::RTShader::IntegratedPSSM3::SplitPointList dstSplitPoints;
+//   const Ogre::PSSMShadowCameraSetup::SplitPointList &srcSplitPoints =
+//     cameraSetup->getSplitPoints();
 
-  for (unsigned int i = 0; i < srcSplitPoints.size(); ++i)
-  {
-    dstSplitPoints.push_back(srcSplitPoints[i]);
-  }
+//   Ogre::RTShader::IntegratedPSSM3::SplitPointList dstSplitPoints;
 
-  pssm3SubRenderState->setSplitPoints(dstSplitPoints);
-  schemRenderState->addTemplateSubRenderState(this->dataPtr->shadowRenderState);
+//   for (unsigned int i = 0; i < srcSplitPoints.size(); ++i)
+//   {
+//     dstSplitPoints.push_back(srcSplitPoints[i]);
+//   }
 
-  this->dataPtr->shaderGenerator->invalidateScheme(_scene->Name() +
-      Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
+//   pssm3SubRenderState->setSplitPoints(dstSplitPoints);
+//   schemRenderState->addTemplateSubRenderState(this->dataPtr->shadowRenderState);
 
-  this->UpdateShaders();
+//   this->dataPtr->shaderGenerator->invalidateScheme(_scene->Name() +
+//       Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
+
+//   this->UpdateShaders();
 
   this->dataPtr->shadowsApplied = true;
 }

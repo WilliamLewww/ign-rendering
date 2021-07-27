@@ -1,0 +1,34 @@
+cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+project(ignition-rendering-point-light_shadows-demo)
+
+find_package(ignition-rendering6)
+
+find_package(GLUT REQUIRED)
+include_directories(SYSTEM ${GLUT_INCLUDE_DIRS})
+link_directories(${GLUT_LIBRARY_DIRS})
+
+find_package(OpenGL REQUIRED)
+include_directories(SYSTEM ${OpenGL_INCLUDE_DIRS})
+link_directories(${OpenGL_LIBRARY_DIRS})
+
+if (NOT APPLE)
+  find_package(GLEW REQUIRED)
+  include_directories(SYSTEM ${GLEW_INCLUDE_DIRS})
+  link_directories(${GLEW_LIBRARY_DIRS})
+endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+
+add_executable(point_light_shadows_demo Main.cc GlutWindow.cc)
+
+target_link_libraries(point_light_shadows_demo
+  ${GLUT_LIBRARIES}
+  ${OPENGL_LIBRARIES}
+  ${GLEW_LIBRARIES}
+  ${IGNITION-RENDERING_LIBRARIES}
+  )
+
+add_custom_command(TARGET point_light_shadows_demo POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+  ${CMAKE_SOURCE_DIR}/media
+  $<TARGET_FILE_DIR:point_light_shadows_demo>/media)
