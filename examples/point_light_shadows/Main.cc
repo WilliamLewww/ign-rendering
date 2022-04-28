@@ -35,6 +35,8 @@
 using namespace ignition;
 using namespace rendering;
 
+LightPtr light;
+
 //////////////////////////////////////////////////
 void buildScene(ScenePtr _scene)
 {
@@ -42,26 +44,12 @@ void buildScene(ScenePtr _scene)
   _scene->SetAmbientLight(0.3, 0.3, 0.3);
   VisualPtr root = _scene->RootVisual();
 
-  // create directional light
-  DirectionalLightPtr light0 = _scene->CreateDirectionalLight();
-  light0->SetDirection(-0.5, 0.5, -1);
-  light0->SetDiffuseColor(0.5, 0.5, 0.5);
-  light0->SetSpecularColor(0.5, 0.5, 0.5);
-  root->AddChild(light0);
-
-  // // create point light
-  // PointLightPtr light1 = _scene->CreatePointLight();
-  // light1->SetDiffuseColor(0.5, 0.5, 0.5);
-  // light1->SetSpecularColor(0.5, 0.5, 0.5);
-  // light1->SetLocalPosition(5, -5, 10);
-  // root->AddChild(light1);
-
   // create point light
-  PointLightPtr light2 = _scene->CreatePointLight();
-  light2->SetDiffuseColor(0.5, 0.5, 0.5);
-  light2->SetSpecularColor(0.5, 0.5, 0.5);
-  light2->SetLocalPosition(3, 5, 5);
-  root->AddChild(light2);
+  light = _scene->CreatePointLight();
+  light->SetDiffuseColor(0.5, 0.5, 0.5);
+  light->SetSpecularColor(0.5, 0.5, 0.5);
+  light->SetLocalPosition(0, 0, 10);
+  root->AddChild(light);
 
   // create green material
   MaterialPtr green = _scene->CreateMaterial();
@@ -254,6 +242,6 @@ int main(int _argc, char** _argv)
       std::cerr << "Error starting up: " << engineName << std::endl;
     }
   }
-  run(cameras);
+  run(cameras, light);
   return 0;
 }

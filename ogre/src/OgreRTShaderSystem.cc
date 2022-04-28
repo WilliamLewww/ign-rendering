@@ -29,12 +29,12 @@
 #include <ignition/common/Util.hh>
 
 #include "ignition/rendering/config.hh"
-#include "ignition/rendering/ogre/OgreRenderEngine.hh"
-#include "ignition/rendering/ogre/OgreScene.hh"
+#include "ignition/rendering/ogre/OgreLight.hh"
 #include "ignition/rendering/ogre/OgreMaterial.hh"
 #include "ignition/rendering/ogre/OgreMesh.hh"
 #include "ignition/rendering/ogre/OgreRTShaderSystem.hh"
-#include "ignition/rendering/ogre/OgreLight.hh"
+#include "ignition/rendering/ogre/OgreRenderEngine.hh"
+#include "ignition/rendering/ogre/OgreScene.hh"
 
 class ignition::rendering::OgreRTShaderSystemPrivate
 {
@@ -542,6 +542,12 @@ bool OgreRTShaderSystem::Paths(std::string &coreLibsPath,
 }
 
 //////////////////////////////////////////////////
+void OgreRTShaderSystem::ResetShadows()
+{
+  this->dataPtr->resetShadows = true;
+}
+
+//////////////////////////////////////////////////
 void OgreRTShaderSystem::RemoveShadows(OgreScenePtr _scene)
 {
   if (!this->dataPtr->initialized || !this->dataPtr->shadowsApplied)
@@ -582,6 +588,11 @@ void OgreRTShaderSystem::ApplyShadows(OgreScenePtr _scene)
 
   sceneMgr->setShadowTechnique(Ogre::SHADOWTYPE_TEXTURE_ADDITIVE_INTEGRATED);
 
+  // directional: assume there can only be one dir light and we always create
+  //              the shadow map for the dir light
+  // spot: update number of shadow textures based on number of shadow casting
+  //       spot lights
+  // point: each point light should have 6 shadow textures
   unsigned int dirLightCount = 1u;
   unsigned int spotLightCount = 0u;
   unsigned int pointLightCount = 0u;
@@ -603,8 +614,10 @@ void OgreRTShaderSystem::ApplyShadows(OgreScenePtr _scene)
   // 3 textures per directional light
   sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_DIRECTIONAL, 3);
 
+  // 1 texture per spotlight
   sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_SPOTLIGHT, 1);
 
+  // 6 textures per point light
   sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_POINT, 6);
 
   unsigned int dirShadowCount = 3 * dirLightCount;

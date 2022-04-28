@@ -46,6 +46,7 @@ unsigned int imgw = 0;
 unsigned int imgh = 0;
 
 std::vector<ir::CameraPtr> g_cameras;
+ir::LightPtr g_light;
 ir::CameraPtr g_camera;
 ir::CameraPtr g_currCamera;
 unsigned int g_cameraIndex = 0;
@@ -76,12 +77,9 @@ void updateCameras()
   double angle = g_offset / 2 * M_PI;
   double x = sin(angle) * 3.0 + 3.0;
   double y = cos(angle) * 3.0;
-  for (ir::CameraPtr camera : g_cameras)
-  {
-    camera->SetLocalPosition(x, y, 0.0);
-  }
+  g_light->SetLocalPosition(x, y, 3);
 
-  g_offset += 0.0005;
+  g_offset += 0.005;
 }
 //! [update camera]
 
@@ -171,7 +169,7 @@ void printUsage()
 }
 
 //////////////////////////////////////////////////
-void run(std::vector<ir::CameraPtr> _cameras)
+void run(std::vector<ir::CameraPtr> _cameras, ir::LightPtr _light)
 {
   if (_cameras.empty())
   {
@@ -189,6 +187,7 @@ void run(std::vector<ir::CameraPtr> _cameras)
 #endif
 
   g_cameras = _cameras;
+  g_light = _light;
   initCamera(_cameras[0]);
   initContext();
   printUsage();

@@ -18,8 +18,10 @@
 #define IGNITION_RENDERING_OGRE_OGRELIGHT_HH_
 
 #include "ignition/rendering/base/BaseLight.hh"
-#include "ignition/rendering/ogre/OgreNode.hh"
 #include "ignition/rendering/ogre/OgreIncludes.hh"
+#include "ignition/rendering/ogre/OgreNode.hh"
+#include "ignition/rendering/ogre/OgreRTShaderSystem.hh"
+#include "ignition/rendering/ogre/OgrePointLightShadowCameraSetup.hh"
 
 namespace Ogre
 {
@@ -97,6 +99,8 @@ namespace ignition
       protected: Ogre::Light *ogreLight;
 
       protected: Ogre::Light::LightTypes ogreLightType;
+
+      protected: Ogre::ShadowCameraSetupPtr shadowCameraSetup;
     };
 
     class IGNITION_RENDERING_OGRE_VISIBLE OgreDirectionalLight :

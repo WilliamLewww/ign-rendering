@@ -145,7 +145,46 @@ bool OgreLight::CastShadows() const
 //////////////////////////////////////////////////
 void OgreLight::SetCastShadows(bool _castShadows)
 {
-  this->ogreLight->setCastShadows(_castShadows);
+  if (this->ogreLight->getType() == Ogre::Light::LT_DIRECTIONAL)
+  {
+    // directional light uses PSSM shadow camera and should already be
+    // configured in RTShaderSystem
+    this->ogreLight->setCastShadows(_castShadows);
+  }
+  else if (this->ogreLight->getType() == Ogre::Light::LT_SPOTLIGHT)
+  {
+    // use different shadow camera for spotlight
+    this->ogreLight->setCastShadows(_castShadows);
+    if (_castShadows && this->shadowCameraSetup.isNull())
+    {
+      this->shadowCameraSetup =
+          Ogre::ShadowCameraSetupPtr(new Ogre::DefaultShadowCameraSetup());
+
+      this->ogreLight->setCustomShadowCameraSetup(
+          this->shadowCameraSetup);
+
+      OgreRTShaderSystem::Instance()->ResetShadows();
+    }
+  }
+  else if (this->ogreLight->getType() == Ogre::Light::LT_POINT)
+  {
+    // use different shadow camera for point light
+    this->ogreLight->setCastShadows(_castShadows);
+    if (_castShadows && this->shadowCameraSetup.isNull())
+    {
+      this->shadowCameraSetup =
+          Ogre::ShadowCameraSetupPtr(new PointLightShadowCameraSetup());
+
+      this->ogreLight->setCustomShadowCameraSetup(
+          this->shadowCameraSetup);
+
+      OgreRTShaderSystem::Instance()->ResetShadows();
+    }
+  }
+  else
+  {
+    this->ogreLight->setCastShadows(false);
+  }
 }
 
 //////////////////////////////////////////////////
@@ -295,5 +334,3 @@ void OgreSpotLight::SetFalloff(double _falloff)
 {
   this->ogreLight->setSpotlightFalloff(_falloff);
 }
-
-//////////////////////////////////////////////////

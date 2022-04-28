@@ -133,6 +133,9 @@ namespace ignition
       /// \param[in] _scene The scene to remove shadows from.
       public: void RemoveShadows(OgreScenePtr _scene);
 
+      /// \brief Reset shadows
+      public: void ResetShadows();
+
       /// \brief Get the Ogre PSSM Shadows camera setup.
       /// \return The Ogre PSSM Shadows camera setup.
       public: Ogre::PSSMShadowCameraSetup *PSSMShadowCameraSetup() const;
