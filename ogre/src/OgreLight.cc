@@ -41,6 +41,12 @@ OgreLight::~OgreLight()
 }
 
 //////////////////////////////////////////////////
+Ogre::Light::LightTypes OgreLight::Type()
+{
+  return this->ogreLightType;
+}
+
+//////////////////////////////////////////////////
 math::Color OgreLight::DiffuseColor() const
 {
   Ogre::ColourValue color = this->ogreLight->getDiffuseColour();

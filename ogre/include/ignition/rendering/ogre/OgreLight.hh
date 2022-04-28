@@ -39,6 +39,8 @@ namespace ignition
 
       public: virtual ~OgreLight();
 
+      public: Ogre::Light::LightTypes Type(); 
+
       public: virtual math::Color DiffuseColor() const override;
 
       public: virtual void SetDiffuseColor(const math::Color &_color) override;

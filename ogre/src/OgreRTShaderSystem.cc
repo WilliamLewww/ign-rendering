@@ -34,6 +34,7 @@
 #include "ignition/rendering/ogre/OgreMaterial.hh"
 #include "ignition/rendering/ogre/OgreMesh.hh"
 #include "ignition/rendering/ogre/OgreRTShaderSystem.hh"
+#include "ignition/rendering/ogre/OgreLight.hh"
 
 class ignition::rendering::OgreRTShaderSystemPrivate
 {
@@ -581,11 +582,37 @@ void OgreRTShaderSystem::ApplyShadows(OgreScenePtr _scene)
 
   sceneMgr->setShadowTechnique(Ogre::SHADOWTYPE_TEXTURE_ADDITIVE_INTEGRATED);
 
+  unsigned int dirLightCount = 1u;
+  unsigned int spotLightCount = 0u;
+  unsigned int pointLightCount = 0u;
+  for (unsigned int i = 0; i < _scene->LightCount(); ++i)
+  {
+    OgreLightPtr ogreLight =
+        std::reinterpret_pointer_cast<OgreLight>(_scene->LightByIndex(i));
+
+    if (!ogreLight->CastShadows())
+      continue;
+
+    if (ogreLight->Type() == Ogre::Light::LT_SPOTLIGHT)
+      spotLightCount++;
+
+    if (ogreLight->Type() == Ogre::Light::LT_POINT)
+      pointLightCount++; 
+  }
+
   // 3 textures per directional light
   sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_DIRECTIONAL, 3);
-  sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_POINT, 0);
-  sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_SPOTLIGHT, 0);
-  sceneMgr->setShadowTextureCount(3);
+
+  sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_SPOTLIGHT, 1);
+
+  sceneMgr->setShadowTextureCountPerLightType(Ogre::Light::LT_POINT, 6);
+
+  unsigned int dirShadowCount = 3 * dirLightCount;
+  unsigned int spotShadowCount = spotLightCount;
+  unsigned int pointShadowCount = 6 * pointLightCount;
+  sceneMgr->setShadowTextureCount(dirShadowCount + spotShadowCount +
+      pointShadowCount);
+
   sceneMgr->setShadowTextureConfig(0,
       this->dataPtr->shadowTextureSize, this->dataPtr->shadowTextureSize,
       Ogre::PF_FLOAT32_R);
