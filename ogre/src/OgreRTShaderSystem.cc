@@ -599,7 +599,7 @@ void OgreRTShaderSystem::ApplyShadows(OgreScenePtr _scene)
   for (unsigned int i = 0; i < _scene->LightCount(); ++i)
   {
     OgreLightPtr ogreLight =
-        std::reinterpret_pointer_cast<OgreLight>(_scene->LightByIndex(i));
+        std::dynamic_pointer_cast<OgreLight>(_scene->LightByIndex(i));
 
     if (!ogreLight->CastShadows())
       continue;
